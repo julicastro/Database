@@ -95,3 +95,39 @@ modelos, es decir, se quiere visualizar el nombre del modelo y
 la cantidad de productos asignados. Si algún modelo no posee 
 asignado ningún producto, se quiere visualizar 0 (cero). */
 
+SELECT pm.Name, COUNT(pp.ProductID) AS 'Cantidad de Productos Asignados'
+	FROM Production.Product pp
+	RIGHT JOIN Production.ProductModel AS pm
+	ON pp.ProductModelID = pm.ProductModelID
+	GROUP BY pp.ProductModelID, pm.Name;
+
+/* 8. Se quiere visualizar, el nombre del producto, el nombre 
+modelo que posee asignado, la ilustración que posee asignada 
+y la fecha de última modificación de dicha ilustración y el 
+diagrama que tiene asignado la ilustración. Solo nos interesan 
+los productos que cuesten más de $150 y que posean algún 
+color asignado.*/
+
+
+
+
+/*
+9. Mostrar aquellas culturas que no están asignadas a ningún 
+producto/modelo. 
+(Production.ProductModelProductDescriptionCulture) 
+10. Agregar a la base de datos el tipo de contacto “Ejecutivo de 
+Cuentas” (Person.ContactType) 
+11. Agregar la cultura llamada “nn” – “Cultura Moderna”. 
+12. Cambiar la fecha de modificación de las culturas Spanish, 
+French y Thai para indicar que fueron modificadas hoy. 
+13. En la tabla Production.CultureHis agregar todas las culturas 
+que fueron modificadas hoy. (Insert/Select). 
+14. Al contacto con ID 10 colocarle como nombre “Juan Perez”. 
+15. Agregar la moneda “Peso Argentino” con el código “PAR” 
+(Sales.Currency) 
+16. ¿Qué sucede si tratamos de eliminar el código ARS 
+correspondiente al Peso Argentino? ¿Por qué? 
+17. Realice los borrados necesarios para que nos permita eliminar 
+el registro de la moneda con código ARS. 
+18. Eliminar aquellas culturas que no estén asignadas a ningún 
+producto (Production.ProductModelProductDescriptionCulture)*/
