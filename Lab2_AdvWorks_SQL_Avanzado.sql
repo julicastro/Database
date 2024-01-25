@@ -108,16 +108,39 @@ diagrama que tiene asignado la ilustración. Solo nos interesan
 los productos que cuesten más de $150 y que posean algún 
 color asignado.*/
 
+SELECT pp.Name AS 'Nombre Producto', pp.ListPrice, pm.Name AS 'Modelo Asignado', il.* 
+	FROM Production.Product pp
+	JOIN Production.ProductModel pm
+	ON pp.ProductModelID = pm.ProductModelID
+	JOIN Production.ProductModelIllustration mi
+	ON pm.ProductModelID = mi.ProductModelID
+	JOIN Production.Illustration il
+	ON mi.IllustrationID = il.IllustrationID
+	WHERE pp.ProductID IN 
+			(SELECT ProductID 
+			FROM Production.Product 
+			WHERE Color IS NOT NULL
+			AND ListPrice >= 150);
+
+/* 9. Mostrar aquellas culturas que no están asignadas a ningún 
+producto/modelo.(Production.ProductModelProductDescriptionCulture)*/
+
+SELECT Name AS 'Cultura' 
+FROM Production.Culture
+WHERE CultureID NOT IN
+	(SELECT CultureID
+	FROM Production.ProductModelProductDescriptionCulture);
+
+/* 10. Agregar a la base de datos el tipo de contacto “Ejecutivo de 
+Cuentas” (Person.ContactType)*/
+INSERT INTO Person.ContactType (Name) 
+VALUES ('Ejecutivo de Cuentas');
+
+/* 11. Agregar la cultura llamada “nn” – “Cultura Moderna”. */
 
 
 
-/*
-9. Mostrar aquellas culturas que no están asignadas a ningún 
-producto/modelo. 
-(Production.ProductModelProductDescriptionCulture) 
-10. Agregar a la base de datos el tipo de contacto “Ejecutivo de 
-Cuentas” (Person.ContactType) 
-11. Agregar la cultura llamada “nn” – “Cultura Moderna”. 
+
 12. Cambiar la fecha de modificación de las culturas Spanish, 
 French y Thai para indicar que fueron modificadas hoy. 
 13. En la tabla Production.CultureHis agregar todas las culturas 
