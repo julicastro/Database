@@ -76,9 +76,10 @@ SELECT pm.ProductModelID AS 'Modelo Valido ID', COUNT(*) AS 'Cantidad de Product
 -- IN
 SELECT pp.ProductModelID AS 'Modelo Valido ID', COUNT(*) AS 'Cantidad de Productos'
 	FROM Production.Product pp
-	WHERE pp.ProductModelID IN (SELECT pm.ProductModelID 
-								FROM Production.ProductModel pm
-								)
+	WHERE pp.ProductModelID IN 
+		(SELECT pm.ProductModelID 
+		FROM Production.ProductModel pm
+		)
 	GROUP BY pp.ProductModelID;
 
 -- EXISTS
@@ -126,10 +127,10 @@ SELECT pp.Name AS 'Nombre Producto', pp.ListPrice, pm.Name AS 'Modelo Asignado',
 producto/modelo.(Production.ProductModelProductDescriptionCulture)*/
 
 SELECT Name AS 'Cultura' 
-FROM Production.Culture
-WHERE CultureID NOT IN
-	(SELECT CultureID
-	FROM Production.ProductModelProductDescriptionCulture);
+	FROM Production.Culture
+	WHERE CultureID NOT IN
+		(SELECT CultureID
+		FROM Production.ProductModelProductDescriptionCulture);
 
 /* 10. Agregar a la base de datos el tipo de contacto “Ejecutivo de 
 Cuentas” (Person.ContactType)*/
@@ -137,20 +138,70 @@ INSERT INTO Person.ContactType (Name)
 VALUES ('Ejecutivo de Cuentas');
 
 /* 11. Agregar la cultura llamada “nn” – “Cultura Moderna”. */
+INSERT INTO Production.Culture (CultureID, Name) 
+VALUES ('mm', 'Cultura Moderna');
 
+/* 12. Cambiar la fecha de modificación de las culturas Spanish, 
+French y Thai para indicar que fueron modificadas hoy. */
 
+UPDATE Production.Culture 
+	SET ModifiedDate = GETDATE()
+	WHERE CultureID IN ('es', 'fr', 'th');
 
+/* 13. En la tabla Production.CultureHis agregar todas las culturas 
+que fueron modificadas hoy. (Insert/Select). */
 
-12. Cambiar la fecha de modificación de las culturas Spanish, 
-French y Thai para indicar que fueron modificadas hoy. 
-13. En la tabla Production.CultureHis agregar todas las culturas 
-que fueron modificadas hoy. (Insert/Select). 
-14. Al contacto con ID 10 colocarle como nombre “Juan Perez”. 
-15. Agregar la moneda “Peso Argentino” con el código “PAR” 
-(Sales.Currency) 
-16. ¿Qué sucede si tratamos de eliminar el código ARS 
-correspondiente al Peso Argentino? ¿Por qué? 
-17. Realice los borrados necesarios para que nos permita eliminar 
-el registro de la moneda con código ARS. 
-18. Eliminar aquellas culturas que no estén asignadas a ningún 
-producto (Production.ProductModelProductDescriptionCulture)*/
+CREATE TABLE Production.CultureHis (
+    CultureID VARCHAR(10) PRIMARY KEY,
+    Name VARCHAR(225),
+    ModifiedDate DATE
+);
+-- cree la tabla xq no existia
+INSERT INTO Production.CultureHis (CultureID, Name, ModifiedDate)
+SELECT CultureID, Name, ModifiedDate
+FROM Production.Culture pc
+WHERE CONVERT(DATE, pc.ModifiedDate) = CONVERT(DATE, GETDATE());
+SELECT * FROM Production.CultureHis;
+/* convert convierte el pc.ModifiedDate al tipo Date q es el tipo de la tabla.
+este pregunta si es igual a la conversion del getDate() al tipo Date. Como este
+se convierte a Date, solo se va a tomar la fecha y no la hora. estableciendo x detras
+la hora 00.00.00. X lo q se agregaran a la tabla los de la fecha de hoy desde las 0hs.*/
+
+/* 14. Al contacto con ID 10 colocarle como nombre “Juan Perez”. */
+UPDATE Production.Product
+SET Name='Juan'
+WHERE ProductID=4;
+
+/* 15. Agregar la moneda “Peso Argentino” con el código “PAR” 
+(Sales.Currency) */
+
+INSERT INTO Sales.Currency (CurrencyCode, Name)
+VALUES ('PAR', 'Peso Argentino');
+
+/* 16. ¿Qué sucede si tratamos de eliminar el código ARS 
+correspondiente al Peso Argentino? ¿Por qué? */
+
+DELETE FROM Sales.Currency WHERE CurrencyCode = 'ARS';
+/* The DELETE statement conflicted with the REFERENCE constraint "FK_CountryRegionCurrency_Currency_CurrencyCode". 
+The conflict occurred in database "AdventureWorks2014", table "Sales.CountryRegionCurrency", column 'CurrencyCode'. */
+
+/* 17. Realice los borrados necesarios para que nos permita eliminar 
+el registro de la moneda con código ARS. */
+
+DELETE FROM Sales.CurrencyRate
+WHERE FromCurrencyCode='ARS'
+	OR ToCurrencyCode='ARS';
+
+DELETE FROM Sales.CountryRegionCurrency
+WHERE CurrencyCode='ARS';
+
+DELETE FROM Sales.Currency
+WHERE CurrencyCode='ARS';
+
+/* 18. Eliminar aquellas culturas que no estén asignadas a ningún 
+producto (Production.ProductModelProductDescriptionCulture) */
+
+DELETE FROM Production.Culture
+	   WHERE CultureID NOT IN
+	   (SELECT CultureID
+	   FROM Production.ProductModelProductDescriptionCulture);
