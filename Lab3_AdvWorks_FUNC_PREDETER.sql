@@ -116,3 +116,59 @@ SELECT NationalIDNumber AS 'Telefono',
 /* 15. Listar la dirección de cada empleado “supervisor” que haya nacido hace más 
 de 30 años. Listar todos los datos en mayúscula. Los datos a visualizar son: 
 nombre y apellido del empleado, dirección y ciudad. */
+SELECT * 
+FROM HumanResources.vEmployee e where JobTitle LIKE '%Supervisor%';
+
+SELECT UPPER(CONCAT(v.FirstName, ' ', v.LastName)) AS 'Nombre y Apellido',
+	CASE
+		WHEN v.AddressLine2 IS NOT NULL 
+		THEN UPPER(CONCAT ('Dir 1:', v.AddressLine1, '. Dir 2:', v.AddressLine2))
+		ELSE UPPER(v.AddressLine1)
+	END AS 'Direccion',
+	UPPER(v.City) AS 'Ciudad'
+	FROM HumanResources.vEmployee v
+	JOIN HumanResources.Employee e
+	ON v.BusinessEntityID = e.BusinessEntityID
+	WHERE v.JobTitle LIKE '%Supervisor%'
+	AND DATEDIFF(YEAR, e.BirthDate, GETDATE()) > 30;
+
+/*16. Listar la cantidad de empleados hombres y mujeres, de la siguiente forma: 
+Sexo Cantidad 
+Femenino 47 
+Masculino 56 
+Nota: Debe decir, Femenino y Masculino de la misma forma que se muestra. */
+
+SELECT CASE Gender 
+	WHEN 'M' THEN 'Masculino' ELSE 'Femenino'
+	END AS 'Sexo',
+	COUNT(*) AS 'Cantidad'
+FROM HumanResources.Employee
+GROUP BY Gender;
+
+SELECT 
+    SUM(CASE WHEN e.Gender = 'F' THEN 1 ELSE 0 END) AS Femenino,
+    SUM(CASE WHEN e.Gender = 'M' THEN 1 ELSE 0 END) AS Masculino
+FROM 
+    HumanResources.Employee e;
+
+/* 17.Categorizar a los empleados según la cantidad de horas de vacaciones, 
+según el siguiente formato: 
+Alto = más de 50 / medio= entre 20 y 50 / bajo = menos de 20 
+Empleado Horas 
+Juan Perez Alto 
+Ana Sanchez Bajo 
+Julio Gomez Medio */
+
+SELECT CONCAT(p.FirstName, ' ', p.LastName) AS Empleado,
+	CASE 
+		WHEN e.VacationHours < 20 THEN 'Bajo'
+		WHEN e.VacationHours > 20 AND e.VacationHours < 50 THEN 'Medio' 
+		ELSE 'Alto' 
+	END AS 'Horas'
+	FROM HumanResources.Employee e
+	JOIN Person.Person p 
+	ON e.BusinessEntityID = p.BusinessEntityID;
+	
+
+
+
