@@ -28,7 +28,8 @@ SELECT POWER(MONTH(GETDATE()), 2) AS 'Mes al cuadrado';
 SELECT SYSTEM_USER;
 
 /* 7. Realizar una consulta que permita conocer la edad de cada empleado 
-(Ayuda: HumanResources.Employee) */
+(Ayuda: HumanResources.Employee) */
+
 SELECT DATEDIFF(YEAR, e.BirthDate, GETDATE()) AS 'Edad'
 	FROM HumanResources.Employee e;
 
@@ -59,4 +60,59 @@ FROM Person.Person
 ORDER BY LEN(LastName) DESC;
 
 /* 10.Realizar una consulta que devuelva los nombres y apellidos de los contactos 
-que hayan sido modificados en los últimos 3 años.*/
+que hayan sido modificados en los últimos 9 años.*/
+
+SELECT FirstName AS 'Nombre',LastName AS 'Apellido'
+FROM Person.Person
+WHERE DATEDIFF(YEAR, ModifiedDate, getDate()) <= 9;
+
+/* 11.Se quiere obtener los emails de todos los contactos, pero en mayúscula. */
+
+SELECT pp.FirstName, UPPER(ea.EmailAddress)
+	FROM Person.Person pp
+	JOIN Person.EmailAddress ea
+	ON pp.BusinessEntityID = ea.BusinessEntityID;
+
+/*12.Realizar una consulta que permita particionar el mail de cada contacto, 
+obteniendo lo siguiente: IDContacto email nombre Dominio ->
+1 juanp@ibm.com juanp ibm */
+
+SELECT pp.BusinessEntityID, ea.EmailAddress,
+	SUBSTRING(ea.EmailAddress, 1, CHARINDEX('@', ea.EmailAddress) -1) AS 'nombre',
+	SUBSTRING(ea.EmailAddress, CHARINDEX('@', ea.EmailAddress) + 1, LEN(ea.EmailAddress)- CHARINDEX('@', ea.EmailAddress)) AS 'Dominio'
+	FROM Person.Person pp
+	JOIN Person.EmailAddress ea
+	ON pp.BusinessEntityID = ea.BusinessEntityID;
+
+SELECT pp.BusinessEntityID, ea.EmailAddress,
+	SUBSTRING(ea.EmailAddress, 1, CHARINDEX('@', ea.EmailAddress) -1) AS 'nombre',
+	REPLACE(SUBSTRING(ea.EmailAddress, CHARINDEX('@', ea.EmailAddress) + 1, LEN(ea.EmailAddress)- CHARINDEX('@', ea.EmailAddress)), '.com', '') AS 'Dominio'
+	FROM Person.Person pp
+	JOIN Person.EmailAddress ea
+	ON pp.BusinessEntityID = ea.BusinessEntityID;
+
+/* 13. Devolver los últimos 3 dígitos del NationalIDNumber de cada empleado*/ 
+
+SELECT RIGHT(e.NationalIDNumber, 3) AS 'Ultimos 3 Digitos'
+FROM HumanResources.Employee e;
+
+/*14.Se desea enmascarar el NationalIDNumbre de cada empleado, de la 
+siguiente forma ###-####-##: ID, Numero, Enmascarado -> 36, 113695504, 113-6955-04 */
+
+SELECT e.BusinessEntityID AS 'ID', e.NationalIDNumber AS 'Numero',
+CONCAT(SUBSTRING(e.NationalIDNumber, 1, 3), '-', SUBSTRING(e.NationalIDNumber, 4, 4), '-', SUBSTRING(e.NationalIDNumber, 8, 2))
+FROM HumanResources.Employee e;
+
+SELECT NationalIDNumber AS 'Telefono',
+	CASE LEN(NationalIDNumber) WHEN 9 
+		THEN
+			CONCAT(SUBSTRING(e.NationalIDNumber, 1, 3), '-', SUBSTRING(e.NationalIDNumber, 4, 4) , '-', SUBSTRING(e.NationalIDNumber, 8, 2))
+		ELSE
+			SUBSTRING(NationalIDNumber,1,3) + '-' +
+			SUBSTRING(NationalIDNumber,4,LEN(NationalIDNumber))	
+	END	AS 'Enmascarado' 
+	FROM HumanResources.Employee e;	
+
+/* 15. Listar la dirección de cada empleado “supervisor” que haya nacido hace más 
+de 30 años. Listar todos los datos en mayúscula. Los datos a visualizar son: 
+nombre y apellido del empleado, dirección y ciudad. */
