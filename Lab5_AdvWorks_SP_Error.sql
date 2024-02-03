@@ -67,3 +67,35 @@ SELECT * FROM dbo.NumeroPar;
 /* 3- p_MuestraNroPares(): Realizar un sp que devuelva los registros 
 insertados en los ítems anteriores. En el caso de que la tabla esté vacía 
 lanzar una excepción indicando dicho error. */
+
+CREATE PROCEDURE p_MuestraNroPares
+AS
+BEGIN 
+	BEGIN TRY
+		DECLARE @v_cantidad_registros SMALLINT;
+		SELECT @v_cantidad_registros = COUNT (nro) FROM dbo.NumeroPar;
+		IF @v_cantidad_registros > 0
+			SELECT * FROM dbo.NumeroPar 
+		ELSE 
+			THROW 50000, 'La tabla está vacía.', 1;
+	END TRY
+	BEGIN CATCH
+		PRINT 'Error: ' + ERROR_MESSAGE();
+	END CATCH
+END;
+
+EXEC p_MuestraNroPares;
+
+/* 4- p_ActualizaBonus(): Se actualizará el bonus de todas las personas que se 
+encuentran en la tabla Sales.SalesPerson, teniendo en cuenta las siguientes 
+condiciones: Se calculará el bonus tomando como % el valor CommissionPct 
+(%) de su valor SalesQuota. Si el valor de SalesQuota es NULL se colocará 0 
+(cero) como bonus. Si el bonus resultante quedó a menos de 3000, se 
+dejará 3000 como mínimo valor de bonus (siempre y cuando tenga algún 
+dato en SalesQuota). Controlar errores y manejar todo el ejercicio como una 
+única transacción. */
+
+SELECT * FROM Sales.SalesPerson;
+
+CREATE PROCEDURE p_MuestraNroPares
+AS
