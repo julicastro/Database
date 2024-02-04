@@ -43,17 +43,101 @@ EXEC p_SelCuture 'ar';
 /* 3- p_DelCulture(id): Este sp debe borrar el id enviado por parámetro de la 
 tabla Production.Culture.*/
 
-CREATE PROCEDURE p_DelCulture
+ALTER PROCEDURE p_DelCulture
 	@p_id NCHAR(12)
+AS
+BEGIN
+	IF @p_id IS NOT NULL AND @p_id IN (SELECT CultureId FROM Production.Culture)
+		BEGIN
+			DELETE FROM Production.Culture WHERE CultureID = @p_id;
+		END
+	ELSE 
+		THROW 50000, 'ID no encontrado', 1;
+END;
+
+EXEC p_DelCulture 'ar';
 
 /* 4- p_UpdCulture(id): Dado un id debe permitirme cambiar el campo name 
-del registro.
-5- sp_CantCulture (cant out): Realizar un sp que devuelva la cantidad de 
-registros en Culture. El resultado deberá colocarlo en una variable de salida.
-6- sp_CultureAsignadas : Realizar un sp que devuelva solamente las 
+del registro. */
+
+CREATE PROCEDURE p_UpdCulture
+	@p_id NCHAR(12), -- PARAMETRO OBLIGATORIO
+	@p_name NVARCHAR(100) -- PARAMETRO OBLIGATORIO
+AS
+BEGIN
+	UPDATE Production.Culture SET Name = @p_name WHERE CultureID = @p_id; 
+END;
+
+EXEC p_UpdCulture 'ar', 'Messilandia';
+
+/* 5- sp_CantCulture (cant out): Realizar un sp que devuelva la cantidad de 
+registros en Culture. El resultado deberá colocarlo en una variable de salida. */
+
+ALTER PROCEDURE sp_CantCulture
+    @cant_out INT OUTPUT -- ESTE ES UN PARAMETRO DE SALIDA
+AS
+BEGIN
+	SELECT @cant_out = COUNT(CultureID) FROM Production.Culture;
+END;
+
+DECLARE @cantidadSalida INT;
+EXECUTE sp_CantCulture @cant_out = @cantidadSalida OUTPUT;
+SELECT @cantidadSalida AS 'Cantidad Total';
+
+/*6- sp_CultureAsignadas : Realizar un sp que devuelva solamente las 
 Culture’s que estén siendo utilizadas en las tablas (Verificar qué tabla/s la 
-están referenciando). Sólo debemos devolver id y nombre de la Cultura.
-7- p_ValCulture(id,name,date,operación, valida out): Este sp permitirá 
+están referenciando). Sólo debemos devolver id y nombre de la Cultura.*/
+
+-- SABER TABLAS REFERENCIADAS: 
+BEGIN 
+	SELECT 
+		fk.name AS 'Nombre de la Clave Externa',
+		tp.name AS 'Tabla Principal',
+		ref.name AS 'Tabla Referenciada'
+	FROM 
+		sys.foreign_keys AS fk
+	JOIN 
+		sys.tables AS tp ON fk.parent_object_id = tp.object_id
+	JOIN 
+		sys.tables AS ref ON fk.referenced_object_id = ref.object_id
+	WHERE 
+		ref.name = 'Culture' -- Nombre de la tabla referenciada (Production.Culture)
+	ORDER BY 
+		tp.name, 
+		fk.name;
+END;
+
+SELECT * FROM Production.ProductModelProductDescriptionCulture;
+
+CREATE PROCEDURE sp_CultureAsignadas
+	@p_id NCHAR(12) OUTPUT,
+	@p_name NVARCHAR(100) OUTPUT
+AS
+BEGIN 
+	SELECT @p_id = c.CultureID 
+	FROM Production.Culture c
+	WHERE c.CultureID IN (SELECT CultureID FROM Production.ProductModelProductDescriptionCulture);
+	SELECT @p_name = NAME
+	FROM Production.Culture c
+	WHERE c.CultureID = @p_id;
+END; 
+
+DECLARE @id NCHAR(12), @nombre NVARCHAR(100);
+EXECUTE sp_CultureAsignadas @p_id = @id OUTPUT, @p_name = @nombre OUTPUT;
+SELECT @id AS 'ID Referenciado', @nombre AS 'Nombre Referenciado';
+
+ALTER PROCEDURE sp_CultureAsignadas
+AS
+SELECT P.CultureID,P.Name 
+FROM Production.Culture P
+WHERE EXISTS(
+	SELECT 1
+	FROM Production.ProductModelProductDescriptionCulture PM
+	WHERE P.CultureID=PM.CultureID
+);
+EXECUTE sp_CultureAsignadas;
+
+/*7- p_ValCulture(id,name,date,operación, valida out): Este sp permitirá 
 validar los datos enviados por parámetro. En el caso que el registro sea 
 válido devolverá un 1 en el parámetro de salida valida ó 0 en caso contrario. 
 El parámetro operación puede ser “U” (Update), “I” (Insert) ó “D” (Delete). 
@@ -64,7 +148,29 @@ existente, ya que arrojará un error.
 ya que el campo Name es un unique index.
 - Ninguno de los campos debería estar vacío.
 - La fecha ingresada no puede ser menor a la fecha actual.
-8- p_SelCulture2(id out, name out, date out): A diferencia del sp del punto 
+*/
+
+
+El error parece deberse a la falta de un END que cierre la estructura CASE. Además, la lógica de la condición @p_date IS NULL también podría necesitar ajustes. Aquí tienes una versión corregida del procedimiento almacenado:
+
+CREATE PROCEDURE p_ValCulture 
+    @p_id NCHAR(12),
+    @p_name NVARCHAR(100),
+    @p_date DATE = NULL,
+    @p_operacion CHAR(1), -- v
+    @p_valida SMALLINT OUTPUT
+AS
+BEGIN
+    IF @p_date IS NULL
+        SET @p_date = GETDATE();
+
+
+END;
+
+
+
+
+/* 8- p_SelCulture2(id out, name out, date out): A diferencia del sp del punto 
 2, este debe emitir todos los datos en sus parámetros de salida. ¿Cómo se 
 debe realizar la llamada del sp para testear este sp?
 9- Realizar una modificación al sp p_InsCulture para que valide los registros 
@@ -88,10 +194,6 @@ ModifiedDate)
 )
 - ¿Qué tipo de datos posee asignado el campo Name?
 - ¿Qué sucede si no se inserta el campo ModifiedDate?
-Universidad Nacional de La Matanza 
-Práctica de Laboratorio
-Base de Datos II SQL Server 2014
-- 2 -
 13-Dada la tabla histórica creada en el punto 12, se desea modificar el 
 procedimiento p_UpdCulture creado en el punto 4. La modificación consiste 
 en que cada vez que se cambia algún valor de la tabla Culture se desea 
