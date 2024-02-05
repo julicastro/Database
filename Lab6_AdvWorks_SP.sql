@@ -150,25 +150,91 @@ ya que el campo Name es un unique index.
 - La fecha ingresada no puede ser menor a la fecha actual.
 */
 
-
-El error parece deberse a la falta de un END que cierre la estructura CASE. Además, la lógica de la condición @p_date IS NULL también podría necesitar ajustes. Aquí tienes una versión corregida del procedimiento almacenado:
-
-CREATE PROCEDURE p_ValCulture 
+ALTER PROCEDURE p_ValCulture 
     @p_id NCHAR(12),
     @p_name NVARCHAR(100),
     @p_date DATE = NULL,
-    @p_operacion CHAR(1), -- v
+    @p_operacion CHAR(1),
     @p_valida SMALLINT OUTPUT
 AS
 BEGIN
-    IF @p_date IS NULL
-        SET @p_date = GETDATE();
 
+	IF @p_date IS NULL
+		SET @p_date = GETDATE();
 
+	IF @p_date > GETDATE()
+	BEGIN
+		SET @p_valida = 0;
+		PRINT 'Operacion Invalida'
+		RETURN;
+	END
+
+	IF @p_operacion <> 'I' AND @p_operacion <> 'U' AND @p_operacion <> 'D'
+	BEGIN
+		SET @p_valida = 0;
+		PRINT 'Operacion Invalida'
+		RETURN;
+	END
+
+	IF @p_id IS NULL or @p_name IS NULL or @p_date IS NULL or @p_operacion IS NULL
+		BEGIN
+		SET @p_valida = 0;
+		PRINT 'No se permiten campos vacios'
+		RETURN;
+	END
+
+	IF @p_operacion = 'I'
+		BEGIN
+			IF EXISTS (SELECT 1 FROM Production.Culture WHERE CultureID = @p_id) 
+			or EXISTS (SELECT 1 FROM Production.Culture WHERE Name = @p_id) 
+			BEGIN
+				SET @p_valida = 0;
+				PRINT 'Ya existe Cultura con ese ID o Nombre'
+				RETURN;
+			END
+			INSERT INTO Production.Culture (CultureID, Name, ModifiedDate)
+			VALUES (@p_id, @p_name, @p_date);
+			SET @p_valida = 1;
+		END
+
+	IF @p_operacion = 'U'
+		BEGIN
+			IF NOT EXISTS (SELECT 1 FROM Production.Culture WHERE CultureID = @p_id) 
+			BEGIN
+				SET @p_valida = 0;
+				PRINT 'No se encontró una cultura con ese ID'
+				RETURN;
+			END
+			IF EXISTS (SELECT 1 FROM Production.Culture c WHERE c.Name = @p_name) 
+			BEGIN
+				SET @p_valida = 0;
+				PRINT 'Ya existe Cultura Nombre'
+				RETURN;
+			END 
+			UPDATE Production.Culture SET Name = @p_name, ModifiedDate = @p_date
+			WHERE CultureID = @p_id;
+			SET @p_valida = 1;
+		END
+
+	IF @p_operacion = 'D'
+		BEGIN
+			IF NOT EXISTS (SELECT 1 FROM Production.Culture WHERE CultureID = @p_id) 
+			BEGIN
+				SET @p_valida = 0;
+				PRINT 'No se encontró una cultura con ese ID'
+				RETURN;
+			END
+			DELETE FROM Production.Culture WHERE CultureID = @p_id;
+			SET @p_valida = 1;
+		END
 END;
 
+DECLARE @v_date DATE, @v_valida SMALLINT;
+SET @v_date = GETDATE();
+EXEC p_ValCulture 'sex', 'asdasd2322', @v_date, 'D', @v_valida OUTPUT;
+SELECT @v_valida AS Resultado;
 
-
+SELECT * FROM Production.Culture;
 
 /* 8- p_SelCulture2(id out, name out, date out): A diferencia del sp del punto 
 2, este debe emitir todos los datos en sus parámetros de salida. ¿Cómo se 
