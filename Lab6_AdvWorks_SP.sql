@@ -238,11 +238,38 @@ SELECT * FROM Production.Culture;
 
 /* 8- p_SelCulture2(id out, name out, date out): A diferencia del sp del punto 
 2, este debe emitir todos los datos en sus parámetros de salida. ¿Cómo se 
-debe realizar la llamada del sp para testear este sp?
-9- Realizar una modificación al sp p_InsCulture para que valide los registros 
+debe realizar la llamada del sp para testear este sp? */
+
+CREATE OR ALTER PROCEDURE p_SelCuture2
+    @p_id NCHAR(12) OUTPUT,
+	@id_out NCHAR(12) OUTPUT,
+    @name_out NVARCHAR(100) OUTPUT,
+    @date_out DATE = NULL OUTPUT
+AS 
+BEGIN
+	IF  @p_id IS NOT NULL AND @p_id IN (SELECT CultureID FROM Production.Culture)
+		BEGIN 
+			SELECT @id_out = c.CultureID, @name_out = c.Name, @date_out = c.ModifiedDate
+			FROM Production.Culture c WHERE CultureID = @p_id;
+		END
+	ELSE 
+		THROW 50000, 'Error', 1;
+END; 
+
+DECLARE @id NCHAR(12), @nombre NVARCHAR(100), @fecha DATE;
+EXEC p_SelCuture2 'ar', @id_out = @id OUTPUT, @name_out = @nombre OUTPUT, @date_out = @fecha OUTPUT;
+SELECT @id AS ID, @nombre AS Nombre, @fecha AS Fecha;
+
+SELECT * FROM Production.Culture;
+
+/* 9- Realizar una modificación al sp p_InsCulture para que valide los registros 
 ingresados. Por lo cual, deberá invocar al sp p_ValCulture. Sólo se insertará 
-si la validación es correcta.
-10-Idem con el sp p_UpdCulture. Validar los datos a actualizar.
+si la validación es correcta.*/ 
+
+
+
+
+/*10-Idem con el sp p_UpdCulture. Validar los datos a actualizar.
 11-En p_DelCulture se deberá modificar para que valide que no posea registros 
 relacionados en la tabla que lo referencia. Investigar cuál es la tabla 
 referenciada e incluir esta validación. Si se está utilizando, emitir un 
