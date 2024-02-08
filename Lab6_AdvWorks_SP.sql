@@ -266,7 +266,21 @@ SELECT * FROM Production.Culture;
 ingresados. Por lo cual, deberá invocar al sp p_ValCulture. Sólo se insertará 
 si la validación es correcta.*/ 
 
+CREATE PROCEDURE p_InsCulture 
+	@p_id NCHAR(12),
+	@p_name NVARCHAR(100)
+AS
+BEGIN
+	DECLARE @p_date  DATETIME
+		SET @p_date =GETDATE()
 
+	IF @p_id IS NOT NULL AND @p_name IS NOT NULL AND @p_date IS NOT NULL
+		INSERT INTO Production.Culture (CultureID, Name, ModifiedDate) VALUES (@p_id, @p_name, @p_date);
+	ELSE 
+		THROW 50000, 'Algun parametro está incompleto', 1;
+END;
+
+EXEC p_InsCulture 'xs', 'Super Small';
 
 
 /*10-Idem con el sp p_UpdCulture. Validar los datos a actualizar.
