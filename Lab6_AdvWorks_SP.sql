@@ -266,29 +266,39 @@ SELECT * FROM Production.Culture;
 ingresados. Por lo cual, deberá invocar al sp p_ValCulture. Sólo se insertará 
 si la validación es correcta.*/ 
 
-CREATE PROCEDURE p_InsCulture 
+ALTER PROCEDURE p_InsCulture (
 	@p_id NCHAR(12),
-	@p_name NVARCHAR(100)
-AS
+	@p_name NVARCHAR(100),
+	@p_date DATE = NULL
+) AS
 BEGIN
-	DECLARE @p_date  DATETIME
-		SET @p_date =GETDATE()
-
-	IF @p_id IS NOT NULL AND @p_name IS NOT NULL AND @p_date IS NOT NULL
-		INSERT INTO Production.Culture (CultureID, Name, ModifiedDate) VALUES (@p_id, @p_name, @p_date);
-	ELSE 
-		THROW 50000, 'Algun parametro está incompleto', 1;
+	
+	DECLARE @v_date DATE, @v_valida SMALLINT;
+	SET @v_date = GETDATE();
+	EXECUTE p_ValCulture @p_id, @p_name, @p_date, 'I', @v_valida OUTPUT;
+	IF @v_valida = 1
+		BEGIN
+			PRINT('Operacion realizada con éxito');
+			SELECT *  FROM Production.Culture WHERE CultureID = @p_id;
+		END 
+	ELSE
+		BEGIN
+			THROW 50000, 'Error', 1;
+		END
 END;
 
-EXEC p_InsCulture 'xs', 'Super Small';
+EXEC p_InsCulture 'x1s', 'Super Small Bros';
 
 
 /*10-Idem con el sp p_UpdCulture. Validar los datos a actualizar.
 11-En p_DelCulture se deberá modificar para que valide que no posea registros 
 relacionados en la tabla que lo referencia. Investigar cuál es la tabla 
 referenciada e incluir esta validación. Si se está utilizando, emitir un 
-mensaje que no se podrá eliminar.
-12-p_CrearCultureHis: Realizar un sp que permita crear la siguiente tabla 
+mensaje que no se podrá eliminar. */
+
+
+
+/* 12-p_CrearCultureHis: Realizar un sp que permita crear la siguiente tabla 
 histórica de Cultura. Si existe deberá eliminarse. Ejecutar el procedimiento 
 para que se pueda crear:
 CREATE TABLE Production.CultureHis( 
