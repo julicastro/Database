@@ -290,12 +290,47 @@ END;
 EXEC p_InsCulture 'x1s', 'Super Small Bros';
 
 
-/*10-Idem con el sp p_UpdCulture. Validar los datos a actualizar.
-11-En p_DelCulture se deberá modificar para que valide que no posea registros 
+/*10-Idem con el sp p_UpdCulture. Validar los datos a actualizar. */ 
+
+ALTER PROCEDURE p_UpdCulture
+	@p_id NCHAR(12),
+	@p_name NVARCHAR(100),
+	@p_date DATE = NULL
+AS
+BEGIN
+
+	DECLARE @v_date DATE, @v_valida SMALLINT;
+	SET @v_date = GETDATE();
+	EXECUTE p_ValCulture @p_id, @p_name, @p_date, 'U', @v_valida OUTPUT;
+	IF @v_valida = 1
+		BEGIN
+			PRINT('Operacion realizada con éxito');
+			SELECT *  FROM Production.Culture WHERE CultureID = @p_id;
+		END 
+	ELSE
+		THROW 50000, 'Error', 1;
+END; 
+
+EXEC p_UpdCulture 'ar', 'Papita';
+
+/* 11-En p_DelCulture se deberá modificar para que valide que no posea registros 
 relacionados en la tabla que lo referencia. Investigar cuál es la tabla 
 referenciada e incluir esta validación. Si se está utilizando, emitir un 
 mensaje que no se podrá eliminar. */
 
+ALTER PROCEDURE p_DelCulture
+	@p_id NCHAR(12)
+AS
+BEGIN
+	IF @p_id IS NOT NULL AND @p_id IN (SELECT CultureId FROM Production.Culture)
+		BEGIN
+			DELETE FROM Production.Culture WHERE CultureID = @p_id;
+		END
+	ELSE 
+		THROW 50000, 'ID no encontrado', 1;
+END;
+
+EXEC p_DelCulture 'ar';
 
 
 /* 12-p_CrearCultureHis: Realizar un sp que permita crear la siguiente tabla 
