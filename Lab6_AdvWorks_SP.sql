@@ -322,16 +322,25 @@ ALTER PROCEDURE p_DelCulture
 	@p_id NCHAR(12)
 AS
 BEGIN
-	IF @p_id IS NOT NULL AND @p_id IN (SELECT CultureId FROM Production.Culture)
-		BEGIN
-			DELETE FROM Production.Culture WHERE CultureID = @p_id;
-		END
+	DECLARE @v_referencias SMALLINT;
+	SELECT @v_referencias = COUNT(c.CultureID)
+			FROM Production.Culture c
+			WHERE c.CultureID = @p_id 
+			AND c.CultureID IN (SELECT CultureID FROM Production.ProductModelProductDescriptionCulture);
+	IF @v_referencias >= 1
+		THROW 50000, 'La PK se encuentra referenciada en otra tabla', 1;
 	ELSE 
-		THROW 50000, 'ID no encontrado', 1;
+		BEGIN 
+			DECLARE @v_valida SMALLINT;
+				EXECUTE p_ValCulture @p_id, 'deleted_object', NULL, 'D', @v_valida OUTPUT;
+				IF @v_valida = 1
+					PRINT ('Se elimino la Cultura con id = ' + CAST(@p_id AS VARCHAR));
+		END
 END;
 
-EXEC p_DelCulture 'ar';
+EXEC p_DelCulture 'x1s';
 
+select * from Production.Culture;
 
 /* 12-p_CrearCultureHis: Realizar un sp que permita crear la siguiente tabla 
 histórica de Cultura. Si existe deberá eliminarse. Ejecutar el procedimiento 
@@ -346,7 +355,10 @@ ModifiedDate)
 )
 - ¿Qué tipo de datos posee asignado el campo Name?
 - ¿Qué sucede si no se inserta el campo ModifiedDate?
-13-Dada la tabla histórica creada en el punto 12, se desea modificar el 
+*/
+
+
+/* 13-Dada la tabla histórica creada en el punto 12, se desea modificar el 
 procedimiento p_UpdCulture creado en el punto 4. La modificación consiste 
 en que cada vez que se cambia algún valor de la tabla Culture se desea 
 enviar el registro anterior a una tabla histórica. De esta forma, en la tabla 
