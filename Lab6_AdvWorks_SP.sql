@@ -357,19 +357,68 @@ ModifiedDate)
 - ¿Qué sucede si no se inserta el campo ModifiedDate?
 */
 
+CREATE OR ALTER PROCEDURE p_CrearCultureHis 
+AS
+BEGIN 
+	IF OBJECT_ID('Production.CultureHis') IS NOT NULL
+		BEGIN
+			DROP TABLE Production.CultureHis;
+			PRINT 'La tabla Production.CultureHis ha sido eliminada.';
+		END
+	ELSE
+		BEGIN
+			CREATE TABLE Production.CultureHis( 
+				CultureID nchar(6) NOT NULL,
+				Name [dbo].[Name] NOT NULL,
+				ModifiedDate datetime NOT NULL CONSTRAINT
+				DF_CultureHis_ModifiedDate DEFAULT (getdate()), 
+				CONSTRAINT PK_CultureHis_IDDate PRIMARY KEY CLUSTERED (CultureID, ModifiedDate)
+			)
+			PRINT 'La tabla Production.CultureHis ha sido creada';
+		END
+END; 
+
+SELECT * FROM Production.CultureHis;
+
+EXECUTE p_CrearCultureHis;
+
+/* sirve para saber q tabla usa determinada FK */ 
+SELECT t.name AS TableName
+FROM sys.tables t
+INNER JOIN sys.indexes i ON t.object_id = i.object_id
+INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE i.name = 'PK_CultureHis_IDDate';
+
+-- ¿Qué sucede si no se inserta el campo ModifiedDate?
+/* Si no se inserta un valor para el campo ModifiedDate, se aplicará la restricción DEFAULT (getdate()). 
+Esto significa que si no se proporciona un valor explícito para ModifiedDate durante una operación de inserción, 
+se utilizará automáticamente la fecha y hora actuales como valor predeterminado.
+
+-- ¿Qué tipo de datos posee asignado el campo Name?
+/* Sí, la definición Name [dbo].[Name] en la creación de la tabla Production.CultureHis indica que el 
+campo Name en esta tabla es del mismo tipo que el campo Name en la tabla dbo.Name. Esta sintaxis es comúnmente 
+utilizada cuando se desea hacer referencia a un tipo de datos definido previamente en la base de datos. */
+/*  Name [dbo].[Name] indica que el campo Name en la tabla Production.CultureHis utilizará el mismo tipo de datos definido en 
+la tabla dbo.Name. Esto promueve la consistencia en la base de datos y facilita la administración de los tipos de datos personalizados.*/
 
 /* 13-Dada la tabla histórica creada en el punto 12, se desea modificar el 
 procedimiento p_UpdCulture creado en el punto 4. La modificación consiste 
 en que cada vez que se cambia algún valor de la tabla Culture se desea 
 enviar el registro anterior a una tabla histórica. De esta forma, en la tabla 
 Culture siempre tendremos el último registro y en la tabla CutureHis cada 
-una de las modificaciones realizadas.
-14-p_UserTables(opcional esquema): Realizar un procedimiento que liste 
+una de las modificaciones realizadas. */
+
+
+
+/* 14-p_UserTables(opcional esquema): Realizar un procedimiento que liste 
 las tablas que hayan sido creadas dentro de la base de datos con su 
 nombre, esquema y fecha de creación. En el caso que se ingrese por 
 parámetro el esquema, entonces mostrar únicamente dichas tablas, de lo 
-contrario, mostrar todos los esquemas de la base.
-15-p_GenerarProductoxColor(): Generar un procedimiento que divida los 
+contrario, mostrar todos los esquemas de la base. */
+
+
+/* 15-p_GenerarProductoxColor(): Generar un procedimiento que divida los 
 productos según el color que poseen. Los mismos deben ser insertados en 
 diferentes tablas según el color del producto. Por ejemplo, las tablas podrían 
 ser Product_Black, Product_Silver, etc… Estas tablas deben ser generadas 
@@ -378,9 +427,14 @@ genero un nuevo producto con un nuevo color, al ejecutar el procedimiento
 debe generar dicho color. Cada vez que se ejecute este procedimiento se 
 recrearán las tablas de colores. Los productos que no posean color 
 asignados, no se tendrán en cuenta para la generación de tablas y no se 
-insertarán en ninguna tabla de color.
-16-p_UltimoProducto(param): Realizar un procedimiento que devuelva en 
-sus parámetros (output), el último producto ingresado.
-17-p_TotalVentas(fecha): Realizar un procedimiento que devuelva el total 
+insertarán en ninguna tabla de color. */
+
+
+/* 16-p_UltimoProducto(param): Realizar un procedimiento que devuelva en 
+sus parámetros (output), el último producto ingresado. */
+
+
+
+/* 17-p_TotalVentas(fecha): Realizar un procedimiento que devuelva el total 
 facturado en un día dado. El procedimiento, simplemente debe devolver el 
 total monetario de lo facturado (Sales) */
