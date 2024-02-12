@@ -398,8 +398,8 @@ se utilizará automáticamente la fecha y hora actuales como valor predeterminado.
 -- ¿Qué tipo de datos posee asignado el campo Name?
 /* Sí, la definición Name [dbo].[Name] en la creación de la tabla Production.CultureHis indica que el 
 campo Name en esta tabla es del mismo tipo que el campo Name en la tabla dbo.Name. Esta sintaxis es comúnmente 
-utilizada cuando se desea hacer referencia a un tipo de datos definido previamente en la base de datos. */
-/*  Name [dbo].[Name] indica que el campo Name en la tabla Production.CultureHis utilizará el mismo tipo de datos definido en 
+utilizada cuando se desea hacer referencia a un tipo de datos definido previamente en la base de datos. 
+Name [dbo].[Name] indica que el campo Name en la tabla Production.CultureHis utilizará el mismo tipo de datos definido en 
 la tabla dbo.Name. Esto promueve la consistencia en la base de datos y facilita la administración de los tipos de datos personalizados.*/
 
 /* 13-Dada la tabla histórica creada en el punto 12, se desea modificar el 
@@ -407,9 +407,73 @@ procedimiento p_UpdCulture creado en el punto 4. La modificación consiste
 en que cada vez que se cambia algún valor de la tabla Culture se desea 
 enviar el registro anterior a una tabla histórica. De esta forma, en la tabla 
 Culture siempre tendremos el último registro y en la tabla CutureHis cada 
-una de las modificaciones realizadas. */
+una de las modificaciones realizadas. */ */
 
+CREATE OR ALTER FUNCTION f_validarUpdate(
+	@p_id NCHAR(12), 
+	@p_name NVARCHAR(100),
+	@p_date DATE = NULL
+)
+	RETURNS SMALLINT
+AS 
+BEGIN 
+	DECLARE @v_result SMALLINT;
+	IF @p_date IS NULL
+		SET @p_date = GETDATE();
+	IF @p_id IS NULL OR @p_name IS NULL OR @p_date > GETDATE()
+       SET @v_result = 0;
+	ELSE 
+		BEGIN
+			IF NOT EXISTS (SELECT 1 FROM Production.Culture WHERE CultureID = @p_id) 
+			BEGIN
+				SET @v_result = 0;
+			END
+			IF EXISTS (SELECT 1 FROM Production.Culture c WHERE c.Name = @p_name) 
+			BEGIN
+				SET @v_result = 0;
+			END 
+			SET @v_result = 1;
+		END
+	RETURN @v_result;
+END; 
 
+CREATE OR ALTER PROCEDURE p_UpdCulture
+	@p_id NCHAR(12), 
+	@p_name NVARCHAR(100),
+	@p_date DATE = NULL
+AS
+BEGIN
+	DECLARE @is_ok SMALLINT;
+	IF @p_date IS NULL
+		SET @p_date = GETDATE();
+	SELECT @is_ok = dbo.f_validarUpdate (@p_id, @p_name, @p_date);
+	IF @is_ok = 1
+		BEGIN TRY
+			BEGIN TRANSACTION
+
+				INSERT INTO Production.CultureHis (CultureID, Name, ModifiedDate)
+				SELECT CultureID, Name, ModifiedDate 
+				FROM Production.Culture 
+				WHERE CultureID = @p_id;
+
+				UPDATE Production.Culture 
+				SET Name = @p_name, ModifiedDate = @p_date  
+				WHERE CultureID = @p_id; 
+
+			COMMIT TRANSACTION; 
+		END TRY
+		BEGIN CATCH
+			SELECT ERROR_MESSAGE() MENSAJE
+			ROLLBACK TRANSACTION
+		END CATCH
+	ELSE 
+		THROW 50000, 'Error en los parametros insertados', 1;
+END;
+
+EXEC p_UpdCulture 'ar', 'florianopolis';
+
+SELECT * FROM Production.CultureHis
+SELECT * FROM Production.Culture;
 
 /* 14-p_UserTables(opcional esquema): Realizar un procedimiento que liste 
 las tablas que hayan sido creadas dentro de la base de datos con su 
@@ -417,6 +481,41 @@ nombre, esquema y fecha de creación. En el caso que se ingrese por
 parámetro el esquema, entonces mostrar únicamente dichas tablas, de lo 
 contrario, mostrar todos los esquemas de la base. */
 
+CREATE OR ALTER PROCEDURE p_UserTables (
+	@SchemaName NVARCHAR(128) = NULL
+)
+AS 
+BEGIN
+	IF @SchemaName IS NULL
+		BEGIN
+			SELECT 
+			t.name AS Nombre_Tabla,
+			s.name AS Esquema,
+			t.create_date AS Fecha_Creacion
+			FROM 
+				sys.tables t
+			INNER JOIN 
+				sys.schemas s ON t.schema_id = s.schema_id
+			ORDER BY 
+				t.create_date DESC;
+		END
+	ELSE
+		BEGIN
+			SELECT 
+			t.name AS Nombre_Tabla,
+			s.name AS Esquema,
+			t.create_date AS Fecha_Creacion
+			FROM 
+				sys.tables t
+			INNER JOIN 
+				sys.schemas s ON t.schema_id = s.schema_id
+			WHERE s.name = @SchemaName
+			ORDER BY 
+				t.create_date DESC;
+		END
+END; 
+
+EXEC p_UserTables 'Discos';
 
 /* 15-p_GenerarProductoxColor(): Generar un procedimiento que divida los 
 productos según el color que poseen. Los mismos deben ser insertados en 
@@ -429,12 +528,38 @@ recrearán las tablas de colores. Los productos que no posean color
 asignados, no se tendrán en cuenta para la generación de tablas y no se 
 insertarán en ninguna tabla de color. */
 
+CREATE OR ALTER PROCEDURE p_GenerarProductoxColor(
+
+)
+AS
+BEGIN
+
+END; 
+
 
 /* 16-p_UltimoProducto(param): Realizar un procedimiento que devuelva en 
 sus parámetros (output), el último producto ingresado. */
 
+CREATE OR ALTER PROCEDURE p_UltimoProducto(
+	@p_product INT OUTPUT
+)
+AS
+BEGIN
+	SET @p_product = (SELECT TOP 1 ProductID FROM Production.Product ORDER BY ProductID DESC);
+END; 
 
+DECLARE @var INT;
+EXEC p_UltimoProducto @var OUTPUT;
+SELECT * FROM Production.Product WHERE ProductID = @var;
 
 /* 17-p_TotalVentas(fecha): Realizar un procedimiento que devuelva el total 
 facturado en un día dado. El procedimiento, simplemente debe devolver el 
 total monetario de lo facturado (Sales) */
+
+CREATE OR ALTER PROCEDURE p_GenerarProductoxColor(
+
+)
+AS
+BEGIN
+
+END; 
