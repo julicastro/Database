@@ -7,22 +7,25 @@ procedimiento sp_help“<esquema.objeto>”. */
 
 sp_help 'Production.Culture';
 
-CREATE PROCEDURE p_InsCulture 
+CREATE OR ALTER PROCEDURE p_InsCulture 
 	@p_id NCHAR(12),
 	@p_name NVARCHAR(100)
 AS
-BEGIN
-	DECLARE @p_date  DATETIME
-		SET @p_date =GETDATE()
+	BEGIN TRY
+		BEGIN TRANSACTION 
+			DECLARE @p_date  DATETIME
+			SET @p_date =GETDATE()
+			INSERT INTO Production.Culture (CultureID, Name, ModifiedDate) VALUES (@p_id, @p_name, @p_date);
+		COMMIT TRANSACTION;
+	END TRY
+	BEGIN CATCH
+		SELECT ERROR_MESSAGE() AS ErrorMessage;
+		ROLLBACK TRANSACTION;
+	END CATCH
+GO
 
-	IF @p_id IS NOT NULL AND @p_name IS NOT NULL AND @p_date IS NOT NULL
-		INSERT INTO Production.Culture (CultureID, Name, ModifiedDate) VALUES (@p_id, @p_name, @p_date);
-	ELSE 
-		THROW 50000, 'Algun parametro está incompleto', 1;
-END;
-
-EXEC p_InsCulture 'xs', 'Super Small';
-
+EXEC p_InsCulture 'xT3s', 'Sup1er SmalUl';
+GO
 select * from Production.Culture;
 
 /* 2- p_SelCuture(id): Este sp devolverá el registro completo según el id 
@@ -31,14 +34,17 @@ enviado. */
 ALTER PROCEDURE p_SelCuture
 	@p_id NCHAR(12)
 AS 
-BEGIN
+BEGIN TRY
 	IF  @p_id IS NOT NULL AND @p_id IN (SELECT CultureID FROM Production.Culture)
 		SELECT * FROM Production.Culture WHERE CultureID = @p_id;
 	ELSE 
-		THROW 50000, 'Error', 1;
-END; 
+		THROW 50000, 'Registro no encontrado', 1;
+END TRY
+BEGIN CATCH
+	SELECT ERROR_MESSAGE() AS ERROR;
+END CATCH
 
-EXEC p_SelCuture 'ar';
+EXEC p_SelCuture '6';
 
 /* 3- p_DelCulture(id): Este sp debe borrar el id enviado por parámetro de la 
 tabla Production.Culture.*/
@@ -46,16 +52,22 @@ tabla Production.Culture.*/
 ALTER PROCEDURE p_DelCulture
 	@p_id NCHAR(12)
 AS
-BEGIN
+BEGIN TRY
+	BEGIN TRANSACTION
 	IF @p_id IS NOT NULL AND @p_id IN (SELECT CultureId FROM Production.Culture)
 		BEGIN
 			DELETE FROM Production.Culture WHERE CultureID = @p_id;
 		END
 	ELSE 
-		THROW 50000, 'ID no encontrado', 1;
-END;
+		THROW 50000, 'Registro no encontrado', 1;
+	COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+	SELECT ERROR_MESSAGE() AS ERROR;
+	ROLLBACK TRANSACTION;
+END CATCH
 
-EXEC p_DelCulture 'ar';
+EXEC p_DelCulture 'xs';
 
 /* 4- p_UpdCulture(id): Dado un id debe permitirme cambiar el campo name 
 del registro. */
@@ -359,24 +371,31 @@ ModifiedDate)
 
 CREATE OR ALTER PROCEDURE p_CrearCultureHis 
 AS
-BEGIN 
-	IF OBJECT_ID('Production.CultureHis') IS NOT NULL
-		BEGIN
-			DROP TABLE Production.CultureHis;
-			PRINT 'La tabla Production.CultureHis ha sido eliminada.';
-		END
-	ELSE
-		BEGIN
-			CREATE TABLE Production.CultureHis( 
-				CultureID nchar(6) NOT NULL,
-				Name [dbo].[Name] NOT NULL,
-				ModifiedDate datetime NOT NULL CONSTRAINT
-				DF_CultureHis_ModifiedDate DEFAULT (getdate()), 
-				CONSTRAINT PK_CultureHis_IDDate PRIMARY KEY CLUSTERED (CultureID, ModifiedDate)
-			)
-			PRINT 'La tabla Production.CultureHis ha sido creada';
-		END
-END; 
+BEGIN TRY
+	BEGIN TRANSACTION
+		IF OBJECT_ID('Production.CultureHis') IS NOT NULL
+			BEGIN
+				DROP TABLE Production.CultureHis;
+				PRINT 'La tabla Production.CultureHis ha sido eliminada.';
+			END
+		ELSE
+			BEGIN
+				CREATE TABLE Production.CultureHis( 
+					CultureID nchar(6) NOT NULL,
+					Name [dbo].[Name] NOT NULL,
+					ModifiedDate datetime NOT NULL CONSTRAINT
+					DF_CultureHis_ModifiedDate DEFAULT (getdate()), 
+					CONSTRAINT PK_CultureHis_IDDate PRIMARY KEY CLUSTERED (CultureID, ModifiedDate)
+				)
+				PRINT 'La tabla Production.CultureHis ha sido creada';
+			END
+
+	COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+	SELECT ERROR_MESSAGE() AS ERROR;
+	ROLLBACK TRANSACTION;
+END CATCH
 
 SELECT * FROM Production.CultureHis;
 
