@@ -528,13 +528,134 @@ recrearán las tablas de colores. Los productos que no posean color
 asignados, no se tendrán en cuenta para la generación de tablas y no se 
 insertarán en ninguna tabla de color. */
 
-CREATE OR ALTER PROCEDURE p_GenerarProductoxColor(
+/* pato */
 
-)
+alter procedure p_GenerarProductoxColor
+as 
+begin try
+	begin transaction
+	DECLARE @color nvarchar(15);
+	DECLARE @sql NVARCHAR(MAX);
+
+	declare  curColor cursor for  select distinct  Color from [Production].[Product] where Color is not null
+	open curColor
+	
+	fetch next from curColor into @color
+	while (@@FETCH_STATUS =0)
+	BEGIN
+		SET @sql = 'IF EXISTS ( SELECT 1 FROM sys.tables WHERE NAME  = ''Product_'+@color+''' )
+						DROP TABLE [Production].[Product_'+@color+'];';
+			EXEC sp_executesql @sql;
+
+            SET @sql = 'CREATE TABLE [Production].[Product_'+@color+'] (' +
+                       '    ProductId INT PRIMARY KEY,' +
+                       '    name NVARCHAR(50)); ' ;
+			EXEC sp_executesql @sql;
+
+             SET @sql= 'INSERT INTO [Production].[Product_'+@color+'] ' +
+                       'SELECT ProductID, name ' +
+                       'FROM [Production].[Product] WHERE Color = ''' + @color + ''';';
+            EXEC sp_executesql @sql;
+		 
+		fetch next from curColor into @color
+		
+	end 
+	close curColor
+	deallocate curColor
+
+	commit transaction
+END try
+begin catch
+
+	close curColor
+	deallocate curColor
+	SELECT ERROR_LINE(),ERROR_PROCEDURE(), ERROR_MESSAGE() MENSAJE
+	rollback transaction
+end catch
+
+
+ SELECT 1 FROM sys.tables WHERE NAME  = 'Product_Black'
+
+execute p_GenerarProductoxColor
+
+drop table [Product].[Product_@color]
+
+
+/* gpt */
+
+CREATE OR ALTER PROCEDURE p_GenerarProductoxColor
 AS
 BEGIN
+    -- Variables
+    DECLARE @sql NVARCHAR(MAX);
+    
+    -- Crear una tabla temporal para almacenar los colores únicos de los productos
+    IF OBJECT_ID('tempdb..#Colores') IS NOT NULL
+        DROP TABLE #Colores;
+    CREATE TABLE #Colores (Color NVARCHAR(50));
+    
+    -- Insertar los colores únicos de los productos en la tabla temporal
+    INSERT INTO #Colores (Color)
+    SELECT DISTINCT Color
+    FROM Production.Product
+    WHERE Color IS NOT NULL;
 
-END; 
+    -- Iterar sobre los colores y generar tablas dinámicas
+    DECLARE @Color NVARCHAR(50);
+    DECLARE color_cursor CURSOR FOR
+    SELECT Color FROM #Colores;
+    
+    OPEN color_cursor;
+    FETCH NEXT FROM color_cursor INTO @Color;
+    
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = 'IF OBJECT_ID(''Production.Product_' + REPLACE(@Color, ' ', '_') + ''') IS NOT NULL
+                        DROP TABLE Production.Product_' + REPLACE(@Color, ' ', '_') + ';
+                    SELECT * INTO Production.Product_' + REPLACE(@Color, ' ', '_') + '
+                    FROM Production.Product
+                    WHERE Color = ''' + @Color + ''';';
+                    
+        EXEC sp_executesql @sql;
+        
+        FETCH NEXT FROM color_cursor INTO @Color;
+    END
+    
+    CLOSE color_cursor;
+    DEALLOCATE color_cursor;
+END;
+
+EXEC p_GenerarProductoxColor; 
+
+
+
+/* DECLARE color_cursor CURSOR FOR SELECT Color FROM #Colores;: 
+Esta instrucción declara un cursor llamado color_cursor que se utilizará para iterar sobre los resultados 
+de la consulta SELECT Color FROM #Colores. Un cursor es un objeto que permite recorrer fila por fila un 
+conjunto de resultados devuelto por una consulta.
+
+OPEN color_cursor;:
+Esta instrucción abre el cursor, lo que significa que está listo para empezar a procesar las filas devueltas
+por la consulta subyacente.
+
+FETCH NEXT FROM color_cursor INTO @Color;: 
+Esta instrucción recupera la siguiente fila del cursor y almacena el valor de la columna Color en la variable 
+@Color. FETCH NEXT se utiliza para avanzar al siguiente registro del cursor.
+
+WHILE @@FETCH_STATUS = 0: 
+Esta es una estructura de control de flujo que ejecuta el código contenido en su bloque mientras @@FETCH_STATUS 
+sea igual a 0. @@FETCH_STATUS es una variable de sistema que indica el estado de la última operación FETCH. Si 
+el estado es 0, significa que se recuperó una fila correctamente y el bucle debe continuar.
+
+CLOSE color_cursor;:
+Esta instrucción cierra el cursor después de que se ha completado el procesamiento de todas las filas.
+
+DEALLOCATE color_cursor;:
+Esta instrucción libera los recursos asociados con el cursor, eliminando el cursor de la memoria.
+
+En resumen, estas instrucciones se utilizan juntas para recorrer iterativamente las filas devueltas por la
+consulta y realizar alguna acción con cada fila, como almacenar los valores en una variable o procesarlos 
+de alguna otra manera. */
 
 
 /* 16-p_UltimoProducto(param): Realizar un procedimiento que devuelva en 
@@ -556,10 +677,21 @@ SELECT * FROM Production.Product WHERE ProductID = @var;
 facturado en un día dado. El procedimiento, simplemente debe devolver el 
 total monetario de lo facturado (Sales) */
 
-CREATE OR ALTER PROCEDURE p_GenerarProductoxColor(
+create procedure p_TotalVentas
+@date datetime, @resultado money output
+as 
+begin try
+	select @resultado=sum(TotalDue) from [Sales].[SalesOrderHeader]
+	where OrderDate =@date
 
-)
-AS
-BEGIN
+	if @resultado is null 
+		set @resultado =0;
+end try
+begin catch
+	select ERROR_MESSAGE() mensaje
+end catch
 
-END; 
+
+declare @resultado money
+execute p_TotalVentas '2011-05-31' , @resultado output
+print @resultado
