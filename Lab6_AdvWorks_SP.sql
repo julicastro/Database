@@ -93,7 +93,7 @@ BEGIN
 END;
 
 DECLARE @cantidadSalida INT;
-EXECUTE sp_CantCulture @cant_out = @cantidadSalida OUTPUT;
+EXECUTE sp_CantCulture @cant_out = @cantidadSalida OUT;
 SELECT @cantidadSalida AS 'Cantidad Total';
 
 /*6- sp_CultureAsignadas : Realizar un sp que devuelva solamente las 
