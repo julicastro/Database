@@ -32,3 +32,4 @@ END;
 -- crear trigger para tabla de auditorioa
 
 
+
