@@ -102,6 +102,7 @@ INSTEAD OF UPDATE
 			ON i.id = ef.id
 			WHERE i.provincia = 'Formosa';
 		END
+		-- ELSE ERROR + ROLLBACK 
 		IF @Provincia = 'Chaco'
 		BEGIN
 			UPDATE EmpleadoChaco
@@ -111,6 +112,7 @@ INSTEAD OF UPDATE
 			ON i.id = ec.id
 			WHERE i.provincia = 'Chaco';
 		END
+		-- ELSE ERROR + ROLLBACK 
 	END
 	ELSE 
 	BEGIN			
@@ -134,3 +136,48 @@ AS
 	FROM   dbo.Providers P
 		   INNER JOIN Inserted I ON P.ProviderCode = I.PersonCode;
 GO
+
+-- En SQL Server, el nivel de aislamiento READ UNCOMMITTED permite acceder a los datos sin ningún tipo de bloqueo.
+
+/* Declare un cursos para la tabla Production.Product q muestre x pantalla
+el valor de los registros ProductID, Name, ProductNumber */
+
+DECLARE @ProductID INT, @Name NVARCHAR(255), @ProductNumber NVARCHAR(25);
+
+DECLARE product_cursor CURSOR FOR 
+    SELECT ProductID, Name, ProductNumber 
+    FROM Production.Product;
+
+OPEN product_cursor;
+
+FETCH NEXT FROM product_cursor INTO @ProductID, @Name, @ProductNumber;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT 'ProductID: ' + CAST(@ProductID AS NVARCHAR(10)) + ', Name: ' + @Name + ', ProductNumber: ' + @ProductNumber;
+
+    FETCH NEXT FROM product_cursor INTO @ProductID, @Name, @ProductNumber;
+END
+
+CLOSE product_cursor;
+DEALLOCATE product_cursor;
+
+-- obtener la edad de cada empleado: 
+
+SELECT 
+    Nombre,
+    FechaNacimiento,
+    DATEDIFF(YEAR, FechaNacimiento, GETDATE()) AS Edad
+FROM 
+    Empleados;
+
+-- MUY IMPORTANTE USAR DATEDIF. 
+
+/* normalizar: 
+si se realizan consultas unicamente por un solo campo como x ejemplo apellido,
+se puede agregarla a este campo un indice no agrupado. NON-CLUSTERED. pero las 
+filas de la tabla no se ordenan físicamente según el orden de ese índice.
+ un tipo de índice en el que las filas de la tabla no se almacenan en el mismo orden que el índice.
+*/
+
+-- CREACION DE BASE DE DATOS.
