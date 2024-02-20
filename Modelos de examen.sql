@@ -36,6 +36,7 @@ END;
 CREATE TRIGGER t_AltaEmpleado
 ON Empleado
 AFTER INSERT 
+AS
 BEGIN
 	IF EXISTS (SELECT 1 FROM INSERTED)
 		BEGIN
@@ -181,3 +182,73 @@ filas de la tabla no se ordenan físicamente según el orden de ese índice.
 */
 
 -- CREACION DE BASE DE DATOS.
+CREATE DATABASE PruebaDb
+ON 
+(
+	NAME = 'Prueba_data', -- nombre logico
+	FILENAME = 'C://files/msql_server/data/prueba.mdf', -- nombre fisico
+	SIZE = 5MB,
+	MAXSIZE = 20MB,
+	FILEGROWTH = 10%
+)
+LOG ON
+(
+	NAME = 'Prueba_log',
+	FILENAME = 'C://files/msql_server/data/prueba.ldf',
+	SIZE = 5MB,
+	MAXSIZE = 20MB,
+	FILEGROWTH = 10%
+)
+
+-- Agregar restriccion a tabla
+
+ALTER TABLE tabla ADD CONSTRAINT birthday CHECK (birthday >= '1900-05-05');
+
+SELECT 
+    EmailAddress AS Email,
+    LEFT(EmailAddress, CHARINDEX('@', EmailAddress) - 1) AS Nombre,
+    SUBSTRING(EmailAddress, CHARINDEX('@', EmailAddress) + 1, LEN(EmailAddress) - CHARINDEX('@', EmailAddress)) AS Dominio,
+    CHARINDEX('@', EmailAddress) AS PosicionArroba
+FROM 
+    Person.EmailAddress;
+
+-- Crear PRC con error detallado
+
+CREATE OR ALTER PROCEDURE EliminarProductos
+	@p_product int
+AS
+BEGIN
+	BEGIN TRY
+		BEGIN TRANSACTION
+		IF @p_product IS NOT NULL AND @p_product IN (SELECT ProductID FROM Production.Product)
+			DELETE FROM Production.Product WHERE ProductID = @p_product
+		ELSE
+			THROW 50000, 'ID no encontrado', 1;
+		COMMIT TRANSACTION;
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION;
+		DECLARE @ErrorMessage NVARCHAR(4000);
+        SET @ErrorMessage = 'Número: ' + CAST(ERROR_NUMBER() AS NVARCHAR) + 
+                            ', Descripción: ' + ERROR_MESSAGE() + 
+                            ', Procedimiento: ' + ISNULL(ERROR_PROCEDURE(), '') + 
+                            ', Número de línea: ' + CAST(ERROR_LINE() AS NVARCHAR);
+        THROW 50000, @ErrorMessage, 1;
+	END CATCH
+END
+
+EXEC EliminarProductos 1;
+
+-- Trigger para no eliminar mas de 1 empleado
+
+CREATE OR ALTER TRIGGER EliminarProducto3
+ON Production.Product
+FOR DELETE
+AS
+BEGIN
+	IF (SELECT COUNT(*) FROM DELETED ) > 1
+	BEGIN
+		ROLLBACK TRANSACTION;
+		THROW 50000, 'No se puede borrar mas de un Empleado', 1;
+	END
+END
