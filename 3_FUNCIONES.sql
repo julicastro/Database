@@ -138,8 +138,8 @@ Femenino 47
 Masculino 56 
 Nota: Debe decir, Femenino y Masculino de la misma forma que se muestra. */
 
-SELECT CASE Gender 
-	WHEN 'M' THEN 'Masculino' ELSE 'Femenino'
+SELECT CASE  
+	WHEN Gender = 'M' THEN 'Masculino' ELSE 'Femenino'
 	END AS 'Sexo',
 	COUNT(*) AS 'Cantidad'
 FROM HumanResources.Employee

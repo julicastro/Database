@@ -1,10 +1,9 @@
 ﻿USE AdventureWorks2014;
 USE Northwind;
 
--- mail
+-- Email
 
 SELECT * FROM Person.EmailAddress; 
-
 
 SELECT 
 	EmailAddress AS 'Email Completo',
@@ -13,18 +12,43 @@ SELECT
 	CHARINDEX('@', EmailAddress) AS 'Posicion del @'
 FROM Person.EmailAddress; 
 
+-- Email sin .com
 
+DECLARE @dom_internet VARCHAR(8);
+SELECT @dom_internet = RIGHT(EmailAddress, LEN(EmailAddress) - CHARINDEX('.', EmailAddress) + 1) FROM Person.EmailAddress;
+SELECT REPLACE(SUBSTRING(EmailAddress, CHARINDEX('@', EmailAddress) + 1, LEN(EmailAddress) - CHARINDEX('@', EmailAddress)), @dom_internet, '')
+FROM Person.EmailAddress;
 
+-- lo mismo 
 
+DECLARE @dom VARCHAR(8)
+SELECT @dom = RIGHT(EmailAddress, LEN(EmailAddress) - CHARINDEX('.', EmailAddress) + 1) FROM Person.EmailAddress;
+SELECT REPLACE(SUBSTRING(EmailAddress, CHARINDEX('@', EmailAddress) + 1, LEN(EmailAddress) - CHARINDEX('@', EmailAddress)), @dom, '')
+	FROM Person.EmailAddress;
 
+/*14.Se desea enmascarar el NationalIDNumber de cada empleado, de la 
+siguiente forma ###-####-##: ID, Numero, Enmascarado -> 36, 113695504, 113-6955-04 */
 
+SELECT NationalIDNumber FROM HumanResources.Employee;
+SELECT 
+	CONCAT(SUBSTRING(NationalIDNumber, 1, 3) , '-' , SUBSTRING(NationalIDNumber, 4, 4) , '-' , SUBSTRING(NationalIDNumber, 7, 2))
+FROM HumanResources.Employee; 
 
+/*16. Listar la cantidad de empleados hombres y mujeres, de la siguiente forma: 
+Sexo Cantidad 
+Femenino 47 
+Masculino 56 
+Nota: Debe decir, Femenino y Masculino de la misma forma que se muestra. */
 
-
-
-
-
-
+SELECT 
+	CASE gender 
+		WHEN 'M' 
+		THEN 'Masculino' 
+		ELSE 'Femenino'
+	END AS 'Cantidad',
+	COUNT(*) AS Genero
+FROM HumanResources.Employee
+GROUP BY Gender;
 
 -- Crear funcion q devuelve una tabla. 
 CREATE FUNCTION ClientesPorTipoConSaldos (
@@ -50,7 +74,6 @@ BEGIN
         C.Tipo = @Tipo
     GROUP BY
         C.idCliente, C.Nombre;
-
     RETURN;
 END;
 
