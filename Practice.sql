@@ -1,6 +1,31 @@
 ﻿USE AdventureWorks2014;
 USE Northwind;
 
+-- mail
+
+SELECT * FROM Person.EmailAddress; 
+
+
+SELECT 
+	EmailAddress AS 'Email Completo',
+	LEFT(EmailAddress, CHARINDEX('@', EmailAddress) -1) AS 'Nombre',
+	SUBSTRING(EmailAddress, CHARINDEX('@', EmailAddress) + 1, LEN(EmailAddress) - CHARINDEX('@', EmailAddress)) as 'Dominio',
+	CHARINDEX('@', EmailAddress) AS 'Posicion del @'
+FROM Person.EmailAddress; 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- Crear funcion q devuelve una tabla. 
 CREATE FUNCTION ClientesPorTipoConSaldos (
     @Tipo TINYINT
@@ -207,7 +232,7 @@ ALTER TABLE tabla ADD CONSTRAINT birthday CHECK (birthday >= '1900-05-05');
 SELECT 
     EmailAddress AS Email,
     LEFT(EmailAddress, CHARINDEX('@', EmailAddress) - 1) AS Nombre,
-    SUBSTRING(EmailAddress, CHARINDEX('@', EmailAddress) + 1, LEN(EmailAddress) - CHARINDEX('@', EmailAddress)) AS Dominio,
+	SUBSTRING(EmailAddress, CHARINDEX('@', EmailAddress) + 1, LEN(EmailAddress) - CHARINDEX('@', EmailAddress)) as 'DOM',
     CHARINDEX('@', EmailAddress) AS PosicionArroba
 FROM 
     Person.EmailAddress;

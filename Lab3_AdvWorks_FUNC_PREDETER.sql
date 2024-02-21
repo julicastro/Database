@@ -79,7 +79,7 @@ obteniendo lo siguiente: IDContacto email nombre Dominio ->
 
 SELECT pp.BusinessEntityID, ea.EmailAddress,
 	SUBSTRING(ea.EmailAddress, 1, CHARINDEX('@', ea.EmailAddress) -1) AS 'nombre',
-	SUBSTRING(ea.EmailAddress, CHARINDEX('@', ea.EmailAddress) + 1, LEN(ea.EmailAddress)- CHARINDEX('@', ea.EmailAddress)) AS 'Dominio'
+	SUBSTRING(ea.EmailAddress, CHARINDEX('@', ea.EmailAddress) + 1, LEN(ea.EmailAddress) - CHARINDEX('@', ea.EmailAddress)) AS 'Dominio'
 	FROM Person.Person pp
 	JOIN Person.EmailAddress ea
 	ON pp.BusinessEntityID = ea.BusinessEntityID;
