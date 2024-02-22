@@ -141,3 +141,25 @@ Select @DBID = db_id(), @TableID = object_id('empTest2')
 DBCC ind(@DBID, @TableID, -1)
 GO
 
+/* 5. Contar la cantidad de Productos que poseen asignado cada 
+modelo, pero mostrar solo aquellos modelos que 
+posean asignados 2 o más productos. */
+
+SELECT pp.ProductModelID, pm.Name, COUNT(pp.ProductID) AS 'Cantidad de Productos'
+	FROM Production.Product pp
+	JOIN Production.ProductModel AS pm
+	ON pp.ProductModelID = pm.ProductModelID
+	GROUP BY pp.ProductModelID, pm.Name
+	HAVING COUNT(*) > 2;
+
+/* 6. Contar la cantidad de Productos que poseen asignado cada 
+modelo valido, es decir, que se encuentre cargado en la tabla 
+de modelos. Realizar este ejercicio de 3 formas posibles: 
+“exists” / “in” / “inner join”. */
+
+-- INNER JOIN
+SELECT pm.ProductModelID AS 'Modelo Valido ID', COUNT(*) AS 'Cantidad de Productos'
+	FROM Production.Product pp
+	JOIN Production.ProductModel AS pm
+	ON pp.ProductModelID = pm.ProductModelID
+	GROUP BY pm.ProductModelID;
