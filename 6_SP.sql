@@ -13,7 +13,7 @@ CREATE OR ALTER PROCEDURE p_InsCulture
 AS
 	BEGIN TRY
 		BEGIN TRANSACTION 
-			DECLARE @p_date  DATETIME
+			DECLARE @p_date  DATE
 			SET @p_date =GETDATE()
 			INSERT INTO Production.Culture (CultureID, Name, ModifiedDate) VALUES (@p_id, @p_name, @p_date);
 		COMMIT TRANSACTION;
@@ -162,7 +162,7 @@ ya que el campo Name es un unique index.
 - La fecha ingresada no puede ser menor a la fecha actual.
 */
 
-ALTER PROCEDURE p_ValCulture 
+CREATE OR ALTER PROCEDURE p_ValCulture 
     @p_id NCHAR(12),
     @p_name NVARCHAR(100),
     @p_date DATE = NULL,
@@ -198,15 +198,18 @@ BEGIN
 	IF @p_operacion = 'I'
 		BEGIN
 			IF EXISTS (SELECT 1 FROM Production.Culture WHERE CultureID = @p_id) 
-			or EXISTS (SELECT 1 FROM Production.Culture WHERE Name = @p_id) 
+			or EXISTS (SELECT 1 FROM Production.Culture WHERE Name = @p_name) 
 			BEGIN
 				SET @p_valida = 0;
 				PRINT 'Ya existe Cultura con ese ID o Nombre'
 				RETURN;
 			END
-			INSERT INTO Production.Culture (CultureID, Name, ModifiedDate)
-			VALUES (@p_id, @p_name, @p_date);
-			SET @p_valida = 1;
+			ELSE
+			BEGIN
+				INSERT INTO Production.Culture (CultureID, Name, ModifiedDate)
+				VALUES (@p_id, @p_name, @p_date);
+				SET @p_valida = 1;
+			END
 		END
 
 	IF @p_operacion = 'U'

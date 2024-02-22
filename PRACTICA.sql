@@ -300,3 +300,66 @@ BEGIN
 		THROW 50000, 'No se puede borrar mas de un Empleado', 1;
 	END
 END
+
+
+/*7- p_ValCulture(id,name,date,operación, valida out): Este sp permitirá 
+validar los datos enviados por parámetro. En el caso que el registro sea 
+válido devolverá un 1 en el parámetro de salida valida ó 0 en caso contrario. 
+El parámetro operación puede ser “U” (Update), “I” (Insert) ó “D” (Delete). 
+Lo que se debe validar es:
+- Si se está insertando no se podrá agregar un registro con un id 
+existente, ya que arrojará un error.
+- Tampoco se puede agregar dos registros Cultura con el mismo Name, 
+ya que el campo Name es un unique index.
+- Ninguno de los campos debería estar vacío.
+- La fecha ingresada no puede ser menor a la fecha actual.
+*/
+
+CREATE OR ALTER PROCEDURE p_ValCultureInsert 
+    @p_id NCHAR(12),
+    @p_name NVARCHAR(100),
+    @p_date DATE = NULL,
+    @p_operacion CHAR(1)
+AS
+BEGIN
+	BEGIN TRY
+		BEGIN TRANSACTION
+		IF @p_date IS NULL
+			SET @p_date = GETDATE();
+
+		IF @p_date > GETDATE()
+			THROW 50000, 'La fecha no puede ser mayor a la actual', 1;
+
+		IF @p_operacion <> 'I' AND @p_operacion <> 'U' AND @p_operacion <> 'D'
+			THROW 50000, 'La operación debe ser I, U o D', 1;
+
+		IF @p_id IS NULL or @p_name IS NULL or @p_date IS NULL or @p_operacion IS NULL
+			THROW 50000, 'No se permiten campos nulos', 1;
+
+		IF @p_operacion = 'I'
+		BEGIN
+			IF EXISTS (SELECT 1 FROM Production.Culture WHERE CultureID = @p_id) or EXISTS (SELECT 1 FROM Production.Culture WHERE Name = @p_name) 
+				THROW 50000, 'Ya existe esa cultura', 1;
+			ELSE
+				INSERT INTO Production.Culture (CultureID, Name, ModifiedDate) VALUES (@p_id, @p_name, @p_date);
+		END
+		COMMIT TRANSACTION; 
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION; 
+		DECLARE @err VARCHAR(4000)
+		SET @err = CONCAT(
+			'Descripcion: ' , ERROR_MESSAGE() ,
+			'. Linea: ' , ERROR_LINE() ,
+			'. Numero: ' , CAST(ERROR_NUMBER() AS VARCHAR) ,
+			'. Procedure: ' , ISNULL(ERROR_PROCEDURE(), 'No aplica')
+		);
+		THROW 50000, @err, 1;
+	END CATCH
+END;
+
+DECLARE @v_date DATE;
+SET @v_date = GETDATE();
+EXEC p_ValCultureInsert 'dada', '44', @v_date, 'I';
+
+SELECT * FROM Production.Culture;
